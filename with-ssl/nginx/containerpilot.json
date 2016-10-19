@@ -1,0 +1,61 @@
+{
+  "consul": "consul:8500",
+  "preStart": "/usr/local/bin/reload.sh preStart",
+  "logging": {"level": "DEBUG"},
+  "services": [
+    {
+      "name": "nginx",
+      "port": 80,
+      "health": "/usr/bin/curl -fsSo /dev/null http://localhost/nginx-health",
+      "poll": 10,
+      "ttl": 25
+    },
+    {
+      "name": "nginx-ssl",
+      "port": 443,
+      "health": "/usr/local/bin/acme init && /usr/bin/curl -kfsSo /dev/null https://localhost/nginx-health",
+      "poll": 10,
+      "ttl": 25
+    }
+  ],
+  "backends": [
+    {
+      "name": "blog",
+      "poll": 7,
+      "onChange": "/usr/local/bin/reload.sh"
+    },
+    {
+      "name": "about",
+      "poll": 7,
+      "onChange": "/usr/local/bin/reload.sh"
+    }
+  ],
+  "coprocesses": [
+    {
+      "command": ["/usr/local/bin/consul-template",
+                  "-config", "/etc/acme/watch.hcl",
+                  "-consul", "consul:8500"],
+      "restarts": "unlimited"
+    }
+  ],
+  "tasks": [
+    {
+      "name": "acme-checkin",
+      "command": [ "/usr/local/bin/acme", "checkin" ],
+      "frequency": "5m",
+      "timeout": "10s"
+    },
+    {
+      "name": "acme-renew-certs",
+      "command": [ "/usr/local/bin/acme", "renew-certs" ],
+      "frequency": "12h",
+      "timeout": "10m"
+    },
+    {
+      "name": "clean-unused-certs",
+      "command": ["/usr/local/bin/acme", "clean-certs" ],
+      "frequency": "24h",
+      "timeout": "10m"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+user  nginx;
+worker_processes  1;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    map $status $isError {
+        ~^2 0;
+        default 1;
+    }
+
+    log_format  main  '$remote_addr - [$time_local] "$request" '
+                      '$status '
+                      '$upstream_addr';
+
+    access_log         /var/log/nginx/access.log  main;
+    sendfile           on;
+    keepalive_timeout  65;
+
+    # Define upstream blog hosts
+    {{ if service "blog" }}
+    upstream blog {
+        {{range service "blog" }}
+        server {{.Address}}:{{.Port}};
+        {{end}}
+        least_conn;
+    }{{ end }}
+    
+    # Define upstream about hosts
+    {{ if service "about" }}
+    upstream about {
+        {{range service "about" }}
+        server {{.Address}}:{{.Port}};
+        {{end}}
+        least_conn;
+    }{{ end }}
+
+    server {
+        server_name _;
+        listen      80;
+
+        # When blog service is ready, proxy + load balance /blog requests to upstream hosts
+        {{ if service "blog" }}
+        location = /blog {
+            return 301 /blog/;
+        }
+        location /blog {
+            proxy_pass http://blog;
+            proxy_redirect off;
+        }
+        {{ end }}
+        
+        # When about service is ready, proxy + load balance /about requests to upstream hosts
+        {{ if service "about" }}
+        location = /about {
+            return 301 /about/;
+        }
+        location /about {
+            proxy_pass http://about;
+            proxy_redirect off;
+        }
+        {{ end }}
+
+        # Respond to health requests defined in containerpilot.json
+        location /nginx-health {
+            stub_status;
+            allow 127.0.0.1;
+            deny all;
+            # Don't log these requests unless they fail
+            access_log /var/log/nginx/access.log  main if=$isError;
+        }
+    }
+}

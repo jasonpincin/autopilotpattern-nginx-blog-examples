@@ -1,0 +1,36 @@
+nginx:
+  build: nginx
+  restart: always
+  mem_limit: 256m
+  environment:
+    - ACME_DOMAIN=MYDOMAIN.GOES.HERE
+  links:
+    - consul:consul
+  ports:
+    - 80:80
+    - 443:443
+
+blog:
+  build: blog
+  mem_limit: 128m
+  links:
+    - consul:consul
+  expose:
+    - 5000
+  restart: always
+
+about:
+  build: about
+  mem_limit: 128m
+  links:
+    - consul:consul
+  expose:
+    - 6000
+  restart: always
+
+consul:
+  image: consul:v0.7.0
+  restart: always
+  mem_limit: 128m
+  ports:
+    - 8500:8500

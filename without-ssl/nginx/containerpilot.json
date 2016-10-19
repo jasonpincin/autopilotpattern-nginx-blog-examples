@@ -1,0 +1,26 @@
+{
+  "consul": "consul:8500",
+  "preStart": "/usr/local/bin/reload.sh preStart",
+  "logging": {"level": "DEBUG"},
+  "services": [
+    {
+      "name": "nginx",
+      "port": 80,
+      "health": "/usr/bin/curl -fsSo /dev/null http://localhost/nginx-health",
+      "poll": 10,
+      "ttl": 25
+    }
+  ],
+  "backends": [
+    {
+      "name": "blog",
+      "poll": 7,
+      "onChange": "/usr/local/bin/reload.sh"
+    },
+    {
+      "name": "about",
+      "poll": 7,
+      "onChange": "/usr/local/bin/reload.sh"
+    }
+  ]
+}
