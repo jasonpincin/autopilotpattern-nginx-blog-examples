@@ -17,7 +17,7 @@ curl 'http://localhost/about/'
 ## with-ssl
 
 The examples in the `with-ssl` directory require you to update the
-[docker-compuse.yml](without-ssl/docker-compose.yml) file and change the
+[docker-compose.yml](without-ssl/docker-compose.yml) file and change the
 ACME_DOMAIN environment variable in the `nginx` section to a domain you control.
 You must then ensure requests to that domain are routed to the Nginx container
 started by `docker-compose`. See the "Nginx and LetsEncrypt on autopilot" blog
